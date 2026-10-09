@@ -1,0 +1,66 @@
+name: Windows installer
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '**/*.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  installer:
+    name: Windows x64 installer
+    runs-on: windows-latest
+    env:
+      CMAKE_GENERATOR: Ninja
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+      - name: Build application
+        run: cargo build --locked --release --target x86_64-pc-windows-msvc
+      - name: Verify executable and build installer
+        shell: pwsh
+        run: |
+          $binary = "$PWD\target\x86_64-pc-windows-msvc\release\spotifast.exe"
+          $imports = & dumpbin /dependents $binary | Out-String
+          if ($LASTEXITCODE -ne 0) { throw 'dumpbin failed' }
+          if ($imports -match 'MSVCP[0-9_]*\.dll|VCRUNTIME[0-9_]*\.dll') {
+            throw "Executable requires an external MSVC runtime: $imports"
+          }
+          $headers = & dumpbin /headers $binary | Out-String
+          if ($LASTEXITCODE -ne 0 -or $headers -notmatch '8664 machine \(x64\)') {
+            throw 'Executable is not Windows x64'
+          }
+          $output = (& $binary --version | Out-String).Trim()
+          if ($LASTEXITCODE -ne 0 -or $output -notmatch '^spotifast (\d+\.\d+\.\d+)') {
+            throw "Unexpected version output: $output"
+          }
+          $version = $Matches[1]
+          $iscc = (Get-Command iscc -ErrorAction SilentlyContinue).Source
+          if (-not $iscc) { $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" }
+          New-Item -ItemType Directory -Force dist | Out-Null
+          & $iscc "/DVersion=$version" /DArch=x86_64 "/DBinary=$binary" `
+            "/DOutputDir=$PWD\dist" packaging\windows\spotifast.iss
+          if ($LASTEXITCODE -ne 0) { throw 'Installer compilation failed' }
+          Copy-Item $binary dist\spotifast.exe
+          Copy-Item packaging\spotifast-portable.txt dist\spotifast-portable.txt
+          Copy-Item README.md,LICENSE dist
+          $manifest = Get-ChildItem dist -File | ForEach-Object {
+            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+            "$hash  $($_.Name)"
+          }
+          $manifest | Set-Content dist\checksums.txt -Encoding ascii
+          "Built from commit $env:GITHUB_SHA" | Set-Content dist\build.txt -Encoding ascii
+      - uses: actions/upload-artifact@v7
+        with:
+          name: spotifast-windows-x64-${{ github.sha }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 30

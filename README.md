@@ -86,6 +86,12 @@ On Windows, launch `target\release\spotifast.exe`. On Linux and macOS, launch
 `target/release/spotifast`. The executable opens the regular app; demo mode
 requires the `demo` feature and launch flags shown [below](#preview-without-a-spotify-account).
 
+### Windows upgrade installer
+
+The [Windows installer workflow](https://github.com/htristan16/Spotifast-PersonalVersion/actions/workflows/windows-installer.yml) builds this fork from `main`. Open a successful run, download its `spotifast-windows-x64-...` artifact, and extract it. Run the `spotifast-v...-x86_64-pc-windows-msvc-setup.exe` file to replace an existing installer-based installation. The installer retains the installation identity and does not remove your settings. Close Spotifast before installing, then launch it from the Start menu.
+
+If you previously ran a portable build, close it and replace its `spotifast.exe` with the executable in the artifact, or use the installer and launch the installed copy. The artifact includes SHA-256 checksums and the source commit. Builds retain the current Cargo version until a versioned release is prepared; this workflow produces manual upgrade installers, not automatic in-app updates. Artifacts expire after 30 days, and you must sign in to GitHub to download them.
+
 ### Upstream packages
 
 The downloads and package-manager commands below install upstream Spotifast.
