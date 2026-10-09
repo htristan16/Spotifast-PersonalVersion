@@ -306,7 +306,9 @@ pub fn show<R>(
         if enabled {
             let background = ui.interact(
                 ui.clip_rect().intersect(ui.max_rect()),
-                ui.id().with("autoscroll-background"),
+                // Sibling scroll-area UIs can share a persistent ID. This
+                // background handles transient clicks and must be unique.
+                ui.unique_id().with("autoscroll-background"),
                 egui::Sense::click(),
             );
             row(ui, &background);

@@ -483,3 +483,45 @@ fn extra_redraws_do_not_make_the_same_one_second_gesture_scroll_further() {
         "equal time and pointer distance must give equal scrolling: {ordinary} vs {frequent}"
     );
 }
+
+#[test]
+fn sibling_shelves_have_distinct_background_interactions() {
+    let ctx = Context::default();
+    ctx.options_mut(|options| options.warn_on_id_clash = true);
+    let mut controller = Autoscroll::default();
+    let mut output = ctx.run_ui(
+        egui::RawInput {
+            screen_rect: Some(Rect::from_min_size(Pos2::ZERO, egui::vec2(600.0, 400.0))),
+            ..Default::default()
+        },
+        |ui| {
+            controller.begin(&ctx, true);
+            for id in ["recent", "podcasts"] {
+                show(
+                    ui,
+                    ScrollArea::horizontal().id_salt(id).max_height(120.0),
+                    egui::Vec2b::new(true, false),
+                    |ui| {
+                        ui.allocate_space(egui::vec2(900.0, 120.0));
+                    },
+                );
+                ui.add_space(20.0);
+            }
+        },
+    );
+    output.textures_delta.clear();
+    fn reports_clash(shape: &egui::Shape) -> bool {
+        match shape {
+            egui::Shape::Text(text) => text.galley.text().contains("use of widget ID"),
+            egui::Shape::Vec(shapes) => shapes.iter().any(reports_clash),
+            _ => false,
+        }
+    }
+    assert!(
+        !output
+            .shapes
+            .iter()
+            .any(|shape| reports_clash(&shape.shape)),
+        "sibling scroll areas must not paint duplicate-widget diagnostics"
+    );
+}
