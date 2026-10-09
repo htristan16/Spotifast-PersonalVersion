@@ -37,15 +37,10 @@ features:
     title: Themes
     details: Choose light, dark, or your own colours. On Omarchy, Spotifast can follow your desktop theme as it changes, while the music keeps playing.
   - icon: 📻
-    title: Winamp mini player
-    details: Bring back the classic Winamp look, with skins, a playlist, sound controls, and animations that move to your music.
-    link: /winamp/
+    title: Mini player
+    details: Album art and playback controls in a sleek compact window that follows your theme.
+    link: /mini-player/
     link_text: See it in action
-  - icon: 🌀
-    title: MilkDrop
-    details: Watch colourful animations react to your music in their own window or full screen. Choose from more than 10,000 designs.
-    link: /milkdrop/
-    link_text: Open the guide
   - icon: ⌨️
     title: Desktop controls
     details: Use keyboard shortcuts and your keyboard's media keys. Keep the music playing after you close the window.
@@ -82,28 +77,14 @@ features:
   }
 </style>
 
-## It turns into Winamp
+## A modern mini player
 
-Load a classic `.wsz` skin from the
-[Winamp Skin Museum](https://skins.webamp.org). The mini player includes
-animated sound displays, an equalizer to adjust your sound, and a playlist.
-Roll it up into a thin bar or enlarge it while keeping the classic pixels
-sharp. [See the mini player in detail](/winamp/).
+Keep your music close in a compact window that matches the main theme.
+Album art, song details, seeking, and playback controls stay within reach.
+Choose the full layout for volume, shuffle, repeat, and queue access, or
+switch to Compact view. [See the mini player in detail](/mini-player/).
 
-<div class="winamp-showcase">
-  <img src="/assets/images/winamp.png" alt="The mini player wearing the built-in skin" width="550" height="812">
-</div>
-
-## MilkDrop with more than 10,000 presets
-
-On first use, Spotifast automatically downloads the original MilkDrop 2
-presets and projectM's Cream of the Crop collection. These visual designs
-react to music playing on your computer, in a resizable window or full screen.
-[See the controls and preset details](/milkdrop/).
-
-<video class="milkdrop-showcase" autoplay loop muted playsinline preload="metadata" poster="/assets/images/milkdrop-poster.jpg" aria-label="MilkDrop presets reacting to music in Spotifast">
-  <source src="/assets/images/milkdrop.mp4" type="video/mp4">
-</video>
+![The modern mini player](/assets/mini-player-review/after-dark.png)
 
 ## WhatsApp, just as fast
 

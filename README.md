@@ -36,7 +36,7 @@ https://github.com/user-attachments/assets/a5f669ce-b3b7-4f8e-9933-976a78876c7e
 
 </details>
 
-[Features](#your-music-on-your-desktop) · [Install](#install) · [First playback](#start-listening) · [Mini player](#the-winamp-mini-player) · [MilkDrop](#music-in-motion) · [Help](#guides-and-help)
+[Features](#your-music-on-your-desktop) · [Install](#install) · [First playback](#start-listening) · [Mini player](#the-mini-player) · [Help](#guides-and-help)
 
 ## Your music, on your desktop
 
@@ -46,8 +46,7 @@ https://github.com/user-attachments/assets/a5f669ce-b3b7-4f8e-9933-976a78876c7e
 | **Spotify Connect** | Play on this computer or control playback on your other devices. |
 | **Themes** | Choose light, dark, system appearance, or custom colours. On Omarchy, follow your desktop theme. |
 | **Desktop controls** | Use keyboard shortcuts and media keys. Keep music playing from the tray when supported by your desktop and settings. |
-| **Winamp mini player** | Use classic skins with an equalizer, playlist, and animated sound displays. |
-| **MilkDrop** | Watch music-reactive visuals in a separate window or full screen. See platform availability below. |
+| **Mini player** | Album art, playback controls, seeking, and volume in a compact window that follows your theme. |
 
 ## Install
 
@@ -73,31 +72,17 @@ both using your computer's protected storage. See
 [Getting started](https://spotifast.rocks/getting-started/) for the full walkthrough
 and [How it connects](https://spotifast.rocks/how-it-connects/) for the details.
 
-## The Winamp mini player
+## The mini player
 
-A classic look for your music, with Winamp 2 `.wsz` skins, an equalizer,
-a playlist, and animated sound displays. Switch with **Ctrl+M**
-(**Cmd+Shift+M** on macOS), the shrink button, or Settings.
+A sleek compact player that follows the main window's theme, with album art,
+playback controls, seeking, volume, and a return to your queue. Switch with
+**Ctrl+M** (**Cmd+Shift+M** on macOS), the shrink button, or Settings.
+Use **Compact view** for an even smaller window, and pin it above other windows.
 
-<p align="center">
-  <img src="docs/assets/images/winamp.png" alt="Spotifast's Winamp mini player with the built-in skin, equalizer, and playlist" width="320">
-</p>
+![The modern mini player](docs/assets/mini-player-review/after-dark.png)
 
-[Explore the mini player](https://spotifast.rocks/winamp/), including skins,
-window sizes, controls, and the return to the main player.
-
-## Music in motion
-
-MilkDrop reacts to music playing on this computer, with more than 10,000
-presets downloaded on first use. Open it from the visualiser button,
-Settings, or the mini player's **V** menu.
-
-![MilkDrop visualiser displaying coloured concentric patterns in Spotifast](docs/assets/images/milkdrop-poster.jpg)
-
-Included on **Linux**, **macOS**, and **Windows Intel/AMD** builds.
-It is not included in the Windows on ARM download.
-[Read the MilkDrop guide](https://spotifast.rocks/milkdrop/) for presets,
-controls, and fullscreen mode.
+[Read the mini player guide](docs/_guide/mini-player.md) for controls and settings.
+MilkDrop has been removed from this personal version.
 
 ## Guides and help
 

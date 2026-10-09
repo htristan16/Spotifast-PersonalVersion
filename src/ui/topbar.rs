@@ -478,32 +478,13 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                 }
                 if theme::icon_button(
                     ui,
-                    Icon::AudioLines,
-                    ICON_BUTTON_ICON,
-                    if app.settings.milkdrop_open {
-                        palette.accent
-                    } else {
-                        palette.secondary
-                    },
-                    palette.text,
-                    super::keys::platform_shortcut(
-                        &gettext(locale, "MilkDrop visualiser (Ctrl+Shift+K)"),
-                        &gettext(locale, "MilkDrop visualiser (Cmd+Shift+K)"),
-                    ),
-                )
-                .clicked()
-                {
-                    app.actions.push(Action::ToggleWinampMilkdrop);
-                }
-                if theme::icon_button(
-                    ui,
                     Icon::Shrink,
                     ICON_BUTTON_ICON,
                     palette.secondary,
                     palette.text,
                     super::keys::platform_shortcut(
-                        &gettext(locale, "Winamp mini player (Ctrl+M)"),
-                        &gettext(locale, "Winamp mini player (Cmd+Shift+M)"),
+                        &gettext(locale, "Mini player (Ctrl+M)"),
+                        &gettext(locale, "Mini player (Cmd+Shift+M)"),
                     ),
                 )
                 .clicked()

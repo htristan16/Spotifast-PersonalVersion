@@ -46,10 +46,6 @@
               (rust-bin.fromRustupToolchainFile ./rust-toolchain.toml)
               rust-analyzer
               pkg-config
-              # libprojectM (MilkDrop) is built from source by CMake, and its
-              # bindings by bindgen, which needs libclang.
-              cmake
-              rustPlatform.bindgenHook
             ]
             ++ lib.optionals stdenv.hostPlatform.isDarwin [
               apple-sdk
@@ -120,24 +116,12 @@
                 pname = "spotifast";
                 version = (pkgs.lib.importTOML ./Cargo.toml).package.version;
                 src = self;
-                hash = "sha256-vXgV/4CXzrw6WTmPnmB7DVZ0P6sC4UB1M70VDuzt2jY=";
+                hash = "sha256-AT4ps2vRzkhZFfyHvb2KAuVsVC6fTNr0IAcnwp/CM7I=";
               };
-              # projectm-sys only searches lib, while CMake may otherwise install to lib64.
-              postPatch = ''
-                substituteInPlace "$cargoDepsCopy"/source-git-*/projectm-sys-*/build.rs \
-                  --replace-fail \
-                  '.define("BUILD_SHARED_LIBS", build_shared_libs)' \
-                  '.define("CMAKE_INSTALL_LIBDIR", "lib").define("BUILD_SHARED_LIBS", build_shared_libs)'
-              '';
-
               nativeBuildInputs =
                 with pkgs;
                 [
                   pkg-config
-                  # libprojectM (MilkDrop) is built from source by CMake, and
-                  # its bindings by bindgen, which needs libclang.
-                  cmake
-                  rustPlatform.bindgenHook
                 ]
                 ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux [ makeWrapper ]
                 ++ pkgs.lib.optionals pkgs.stdenv.hostPlatform.isDarwin [

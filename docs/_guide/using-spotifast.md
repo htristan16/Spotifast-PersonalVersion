@@ -211,7 +211,7 @@ Unmodified letter shortcuts still yield to the focused control.
 
 This is the first part of screen-reader support. Windows testing with NVDA
 remains tracked in [#262](https://github.com/crmne/spotifast/issues/262).
-Winamp skins do not yet have equivalent accessibility coverage.
+The mini player supports keyboard and accessibility playback controls.
 
 ## Keyboard shortcuts
 
@@ -233,8 +233,7 @@ Winamp skins do not yet have equivalent accessibility coverage.
 | `Ctrl+A` | Select every song in a playlist, album or Liked Songs |
 | `Ctrl+C` / `Ctrl+V` | Copy the selected songs' links / add copied song links to your playlist |
 | `Ctrl+X` | Copy the selected songs' links and remove the songs from your playlist |
-| `Ctrl+M` | Winamp mini player |
-| `Ctrl+Shift+K` | MilkDrop |
+| `Ctrl+M` | Mini player |
 | `Ctrl+,` | Settings |
 | `Ctrl+/` or `?` | All shortcuts |
 | `Ctrl+Q` | Quit |
@@ -368,12 +367,12 @@ and raises Spotifast. Use **Show or hide Spotifast** in the tray menu to hide
 it again.
 
 Closing to the tray removes the window and its preview. Reopening the main
-window or switching to the Winamp window creates its controls again. Media
+window or switching to the mini player creates its controls again. Media
 keys and the system's now-playing controls continue working while the window
 is closed.
 
-For the Winamp mini player, turn off **Show in taskbar** under
-**Settings > Winamp skins**, or **Show in taskbar** in its options menu.
+For the Mini player, turn off **Show in taskbar** under
+**Settings > Mini player**.
 The choice survives restarts. The mini player stays visible; the tray icon,
 **Ctrl+M**, the skin logo, and launching Spotifast again remain ways to reach
 the app. Returning to the main window always restores its taskbar button.

@@ -13,8 +13,6 @@ Spotifast follows each platform's conventions. On Linux:
 | What | Where | Safe to delete? |
 | --- | --- | --- |
 | Settings | `~/.config/spotifast/settings.json` | Yes, you lose preferences |
-| Winamp skins | `~/.config/spotifast/skins/` | Yes, you add them again |
-| MilkDrop presets | `~/.config/spotifast/milkdrop/` | Yes, you fetch them again |
 | Spotify grants (available since 0.8.0) | System credential store | Use Sign out in Settings |
 | Credential revocation markers (available since 0.8.0) | `~/.local/state/spotifast/credential-storage/` | Keep after a failed sign-out deletion |
 | Legacy shared Web API grant | `~/.local/state/spotifast/shared_web_api_token.json` | Removed after migration or sign-out |
@@ -157,7 +155,7 @@ their rows stay in memory until the write and its snapshot are confirmed,
 even if this temporarily exceeds the usual page limit. Track metadata is
 limited to 800 cached tracks; navigation and periodic cleanup trim old entries.
 
-The session remembers separate positions for the main window and the Winamp
+The session remembers separate positions for the main window and the mini player
 mini player. The shade modes are kept in `settings.json`. Wayland compositors
 may ignore saved positions. On Windows, a position
 whose title bar is no longer on an available monitor's work area is discarded
@@ -241,30 +239,17 @@ main fields are:
 | `sidebar_grid` | `false` | Library entries as responsive cover cards instead of rows |
 | `tracklist_compact` | `false` | One-line track rows without covers |
 | `middle_click_autoscroll` | `false` | Linux only: middle-click a list to autoscroll it. Windows always autoscrolls and macOS never does |
-| `winamp_window` | `false` | The window is the Winamp mini player |
-| `winamp_show_taskbar` | `true` | Windows since 0.8.0, and Linux X11 sessions: show the Winamp window's taskbar button; the main window always keeps its button. Wayland and macOS ignore it |
+| `winamp_window` | `false` | The window is the mini player |
+| `winamp_show_taskbar` | `true` | Windows since 0.8.0, and Linux X11 sessions: show the mini player's taskbar button; the main window always keeps its button. Wayland and macOS ignore it |
 | `custom_titlebar` | `false` | Windows only, since 0.10.0: draw Spotifast's own title bar and window buttons instead of the standard Windows ones |
-| `skin` | none | File or folder name in the skins folder; blank uses the built-in skin |
-| `random_skin` | `false` | Since 0.11.0: pick a different skin (built-in or installed) each time the mini player opens; `skin` holds the one picked |
-| `skin_scale` | by display | Screen pixels per skin pixel, 1 to 4 |
 | `winamp_on_top` | `false` | Keep the mini player above other windows |
-| `vis` | `bars` | The mini player's visualiser: `bars`, `scope`, or `off` |
-| `playlist_open` | `false` | The playlist window is open under the mini player |
-| `playlist_height` | `174` | The playlist window's height in skin pixels |
-| `eq_open` | `false` | The equalizer window is open under the mini player |
 | `eq_on` | `false` | The equalizer shapes local playback |
 | `eq_preamp_db` | `0` | The preamp, in decibels, -12 to 12 |
 | `eq_bands_db` | ten zeros | The bands from 60 Hz to 16 kHz, in decibels, -12 to 12 |
 | `balance` | `0` | Left to right, -1 to 1, for local playback |
 | `mono` | `false` | Play both channels the same |
-| `playlist_shaded` | `false` | The playlist window is rolled up to its title bar |
-| `winamp_shaded` | `false` | The main window is rolled up to its title bar |
-| `milkdrop_open` | `false` | The MilkDrop window is open |
-| `milkdrop_seconds` | `30` | How long each MilkDrop preset plays |
-| `milkdrop_fps` | `60` | MilkDrop frame rate; `0` is uncapped |
+| `winamp_shaded` | `false` | The mini player uses Compact view |
 | `milkdrop_screen_hz` | `0` | Last reported display refresh rate |
-| `milkdrop_fullscreen` | `false` | The MilkDrop window fills the screen |
-| `milkdrop_size` | `640, 480` | The MilkDrop window's size in points |
 | `keep_playing_in_background` | `true` | Close to tray |
 | `mac_notch_widget` | `false` | Show interactive Now Playing widget when hovering over the MacBook notch (macOS only) |
 | `check_for_updates` | `true` | Ask GitHub once a day for a newer release |
@@ -304,7 +289,7 @@ settings.
 `--demo-page` opens a page, such as `home`, `playlist:pl1`, or `artist:art0`,
 and `--demo-show` adds surfaces on top of it: a comma separated list of
 `queue`, `playing-next`, `devices`, `shortcuts`, `premium`, `create`, `duplicate`, `light`,
-`focus`, `winamp`, `playlist`, `eq`, `eq-shade`, `compact`, `update`, `personal-app`,
+`focus`, `mini-player` (or legacy `winamp`), `playlist`, `eq`, `eq-shade`, `compact`, `update`, `personal-app`,
 `collection-loading`, `shuffle-selected`, `shuffle-started`, `library-list`,
 `library-list-narrow`, `library-list-wide`, `library-grid`, `library-grid-narrow`,
 `library-grid-wide`, `rtl`, `player-bar-spectrum`, `player-bar-waveform`,
@@ -392,7 +377,7 @@ Themes change colors and keep the app's existing fonts.
 **How to make a theme**, beside the picker, opens this section. The
 **Open themes folder** icon button beside the picker creates the folder if
 needed and opens it in your file
-manager, using the same button style as the Winamp skins folder.
+manager.
 After adding or editing a JSON file on macOS or Windows, run
 `spotifast reload-themes` to refresh the list and the selected palette without
 restarting playback. Since 0.10.2, Spotifast on Linux notices changes to the
@@ -445,7 +430,7 @@ reset unrelated settings.
 A custom palette's `base` controls both its inherited colors and the light or
 dark styling of standard controls. Album-art tinting remains an independent
 setting; turn it off for fixed colors throughout. Palettes apply to the main
-window; Winamp skins remain separate. This first format controls colors only.
+window and the mini player. This first format controls colors only.
 
 ### Follow an Omarchy theme
 

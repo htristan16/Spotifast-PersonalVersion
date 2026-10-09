@@ -341,20 +341,9 @@ pub(crate) fn run() -> eframe::Result<()> {
     // helper, which installs and exits; otherwise the receipt and error an
     // update relaunch carries are taken out of the arguments.
     let launch = fastframe_update::intercept(&spotifast::updates::CONFIG);
-    // A MilkDrop child launch is a bare visualiser window, not the app: it has
-    // its own event loop and OpenGL context, reads the sound from a shared
-    // buffer, and never touches the app's state. Handle it before anything
-    // else, including the argument parser, which does not know its flags.
-    #[cfg(feature = "milkdrop")]
-    if let Some(args) = spotifast::milkdrop::child::Args::parse() {
-        std::process::exit(spotifast::milkdrop::child::run(args));
-    }
-
     let cli = Cli::from_arg_matches(&Cli::command().get_matches_from(&launch.arguments))
         .unwrap_or_else(|error| error.exit());
-    // Demo mode invents plays, settings, and a signed-in account. Without a
-    // folder of its own it would write them into the real profile, where
-    // they would pass for the user's history.
+    // Demo mode has a separate profile so sample data never changes the user's state.
     #[cfg(feature = "demo")]
     let cli = if (cli.demo || cli.demo_shot.is_some()) && cli.demo_data.is_none() {
         Cli {
@@ -682,7 +671,7 @@ struct MiniWindow {
 impl MiniWindow {
     fn wanted(app: &app::App) -> Option<Self> {
         app.settings.winamp_window.then(|| Self {
-            size: spotifast::ui::winamp::initial_size(&app.settings),
+            size: spotifast::ui::mini_player::initial_size(&app.settings),
             position: app.winamp.restore_pos,
             on_top: app.settings.winamp_on_top,
             taskbar: app.settings.winamp_show_taskbar,
@@ -780,9 +769,7 @@ fn native_options(
     let viewport = match mini {
         Some(mini) => {
             let level = app::on_top_window_level(mini.on_top);
-            // See-through, for skins that are not rectangles; the skin
-            // paints every pixel that is the window. MilkDrop runs in its own
-            // process, so nothing else shares this window's surface.
+            // Transparent corners let the themed mini player draw a rounded card.
             let viewport = viewport
                 .with_decorations(false)
                 .with_transparent(true)
@@ -939,7 +926,7 @@ mod native_window_tests {
                 skin_scale: Some(2),
                 ..Default::default()
             };
-            let size = spotifast::ui::winamp::initial_size(&settings);
+            let size = spotifast::ui::mini_player::initial_size(&settings);
             let options = native_options(
                 false,
                 Some(MiniWindow {

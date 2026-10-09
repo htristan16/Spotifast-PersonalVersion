@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Mini player visual review</title>
+<style>
+body{font:16px system-ui;margin:40px;background:#181a1b;color:#eee}
+button,select{font:inherit;margin:8px;padding:8px}
+figure{margin:24px 0;min-height:300px}img{max-width:100%}
+</style>
+<h1>Modern mini player</h1>
+<p>Actual Linux/X11 demo captures. The replacement follows the main theme and keeps playback controls in full and compact layouts. Album art falls back to an icon when unavailable.</p>
+<label>Theme <select id="theme"><option>dark</option><option>light</option></select></label>
+<label>Size <select id="size"><option value="">Full</option><option value="-compact">Compact</option></select></label>
+<button id="before">Before</button><button id="after">After</button>
+<figure><img id="shot" alt="Mini player screenshot"><figcaption id="caption"></figcaption></figure>
+<p>Changes: rounded themed card, album art and song details, seek bar, playback controls, pin, compact and return buttons. Full layout adds shuffle, repeat, volume, device and queue. MilkDrop and the skin settings are removed. Existing keyboard playback shortcuts and preferences are retained.</p>
+<script>
+let stage='after';
+function render(){
+const theme=document.getElementById('theme').value,size=document.getElementById('size').value;
+document.getElementById('shot').src=stage+'-'+theme+size+'.png';
+document.getElementById('caption').textContent=stage+' · '+theme+' · '+(size?'compact':'full');
+}
+document.getElementById('before').onclick=()=>{stage='before';render()};
+document.getElementById('after').onclick=()=>{stage='after';render()};
+document.querySelectorAll('select').forEach(s=>s.onchange=render);
+render();
+</script>
+</html>

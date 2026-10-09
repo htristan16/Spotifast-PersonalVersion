@@ -1,6 +1,7 @@
 src/ui/sidebar.rs
 src/i18n.rs
 src/ui/player_bar.rs
+src/ui/mini_player.rs
 src/ui/queue.rs
 src/ui/lyrics.rs
 src/ui/widgets.rs
@@ -8,7 +9,6 @@ src/app.rs
 src/ui/settings.rs
 src/api/models.rs
 src/app/radio.rs
-src/milkdrop.rs
 src/model.rs
 src/settings.rs
 src/theme.rs

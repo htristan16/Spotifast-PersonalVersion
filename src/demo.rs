@@ -1001,7 +1001,7 @@ pub fn apply_flags(app: &mut App, page: Option<&str>, show: Option<&str>) {
                 app.actions.push(Action::Next);
             }
             // Use the built-in skin for deterministic screenshots.
-            "winamp" => {
+            "mini-player" | "winamp" => {
                 app.settings.winamp_window = true;
                 app.settings.skin = None;
                 // Two screen pixels per skin pixel, whatever the display, so
@@ -1050,7 +1050,6 @@ pub fn apply_flags(app: &mut App, page: Option<&str>, show: Option<&str>) {
                 app.settings.eq_open = true;
                 app.settings.eq_shaded = true;
             }
-            "milkdrop" => app.settings.milkdrop_open = true,
             "pins" => {
                 app.settings.pinned_contexts =
                     vec!["spotify:playlist:pl2".into(), "spotify:playlist:pl4".into()];
@@ -1460,6 +1459,147 @@ mod tests {
             repeat: false,
             modifiers,
         }
+    }
+
+    fn mini_frame(
+        ctx: &egui::Context,
+        app: &mut App,
+        events: Vec<egui::Event>,
+    ) -> egui::accesskit::TreeUpdate {
+        let mut output = ctx.run_ui(
+            egui::RawInput {
+                screen_rect: Some(egui::Rect::from_min_size(
+                    egui::Pos2::ZERO,
+                    crate::ui::mini_player::initial_size(&app.settings),
+                )),
+                events,
+                ..Default::default()
+            },
+            |ui| crate::ui::mini_player::show(app, ui),
+        );
+        output.textures_delta.clear();
+        output
+            .platform_output
+            .accesskit_update
+            .expect("mini player accessibility tree")
+    }
+
+    #[test]
+    fn modern_mini_player_transport_works_in_both_layouts_without_a_pointer() {
+        use egui::accesskit::{Action as AccessibleAction, Role};
+        for compact in [false, true] {
+            let (ctx, mut app) = accessible_app(&format!("modern-mini-transport-{compact}"));
+            app.settings.winamp_window = true;
+            app.settings.winamp_shaded = compact;
+            mini_frame(&ctx, &mut app, vec![]);
+            let tree = mini_frame(&ctx, &mut app, vec![]);
+            for label in [
+                "Pause",
+                "Previous",
+                "Next",
+                "Return to main window",
+                "Close",
+            ] {
+                let control = accessible_node(&tree, label, Role::Button);
+                app.actions.clear();
+                mini_frame(
+                    &ctx,
+                    &mut app,
+                    vec![accessible_action(control, AccessibleAction::Click, None)],
+                );
+                let expected = match label {
+                    "Pause" => matches!(app.actions.as_slice(), [crate::model::Action::TogglePlay]),
+                    "Previous" => {
+                        matches!(app.actions.as_slice(), [crate::model::Action::Previous])
+                    }
+                    "Next" => matches!(app.actions.as_slice(), [crate::model::Action::Next]),
+                    "Return to main window" => matches!(
+                        app.actions.as_slice(),
+                        [crate::model::Action::ToggleWinampWindow]
+                    ),
+                    "Close" => {
+                        matches!(app.actions.as_slice(), [crate::model::Action::CloseWindow])
+                    }
+                    _ => unreachable!(),
+                };
+                assert!(expected, "{label} in compact={compact}: {:?}", app.actions);
+            }
+            app.actions.clear();
+            mini_frame(
+                &ctx,
+                &mut app,
+                vec![keyboard(egui::Key::Space, egui::Modifiers::NONE)],
+            );
+            assert!(matches!(
+                app.actions.as_slice(),
+                [crate::model::Action::TogglePlay]
+            ));
+            app.backend.shutdown();
+        }
+    }
+
+    #[test]
+    fn modern_mini_player_exposes_seeking_and_respects_fixed_remote_volume() {
+        use egui::accesskit::{Action as AccessibleAction, ActionData, Role};
+        let (ctx, mut app) = accessible_app("modern-mini-sliders");
+        app.remote
+            .as_mut()
+            .unwrap()
+            .state
+            .device
+            .as_mut()
+            .unwrap()
+            .supports_volume = Some(false);
+        mini_frame(&ctx, &mut app, vec![]);
+        let tree = mini_frame(&ctx, &mut app, vec![]);
+        for label in ["Mute", "Volume (%)"] {
+            let (_, node) = tree
+                .nodes
+                .iter()
+                .find(|(_, node)| node.label() == Some(label))
+                .expect(label);
+            assert!(
+                node.is_disabled(),
+                "{label} cannot control this remote device"
+            );
+        }
+        let seek = accessible_node(&tree, "Playback position (%)", Role::Slider);
+        let duration = app.now_playing().unwrap().duration_ms;
+        app.actions.clear();
+        mini_frame(
+            &ctx,
+            &mut app,
+            vec![accessible_action(
+                seek,
+                AccessibleAction::SetValue,
+                Some(ActionData::NumericValue(50.0)),
+            )],
+        );
+        assert!(
+            matches!(app.actions.as_slice(), [crate::model::Action::Seek(ms)] if *ms == duration / 2)
+        );
+        app.backend.shutdown();
+    }
+
+    #[test]
+    fn modern_mini_player_settings_replace_skins_and_remove_milkdrop() {
+        let (ctx, mut app) = accessible_app("modern-mini-settings");
+        let text = settings_text(&ctx, &mut app, "mini player");
+        assert!(text.iter().any(|label| label == "Mini player"));
+        assert!(text.iter().any(|label| label == "Compact view"));
+        assert!(
+            !text
+                .iter()
+                .any(|label| label.contains("Winamp") || label.contains("Skin Museum"))
+        );
+        assert!(
+            settings_text(&ctx, &mut app, "MilkDrop")
+                .iter()
+                .filter(|label| label.as_str() == "MilkDrop" || label.as_str() == "MilkDrop window")
+                .count()
+                <= 1 // The search field itself contains the query.
+        );
+        app.backend.shutdown();
     }
 
     #[test]
@@ -2935,7 +3075,6 @@ mod tests {
             ("Normalize volume", Role::CheckBox),
             ("Dark", Role::Button),
             ("Switch to it", Role::Button),
-            ("MilkDrop window", Role::CheckBox),
             ("Equalizer", Role::CheckBox),
             ("Clear artwork", Role::Button),
             ("Check for updates", Role::Button),
@@ -3096,16 +3235,13 @@ mod tests {
     fn settings_search_never_shows_a_section_for_an_unavailable_row() {
         let (ctx, mut app) = accessible_app("settings-search-availability");
         let text = settings_text(&ctx, &mut app, "Show in taskbar");
-        assert_eq!(
-            text.iter().any(|text| text == "Winamp skins"),
-            cfg!(windows)
-        );
+        assert_eq!(text.iter().any(|text| text == "Mini player"), cfg!(windows));
         if !cfg!(windows) {
             assert!(text.iter().any(|text| text.starts_with("No settings for")));
         }
         app.demo_windows_controls = true;
         let text = settings_text(&ctx, &mut app, "Show in taskbar");
-        assert!(text.iter().any(|text| text == "Winamp skins"));
+        assert!(text.iter().any(|text| text == "Mini player"));
         assert!(text.iter().any(|text| text == "Show in taskbar"));
 
         app.settings.web_client_id = None;
@@ -3583,7 +3719,7 @@ mod tests {
                 !tree
                     .nodes
                     .iter()
-                    .any(|(_, node)| node.label() == Some("Show Winamp in taskbar"))
+                    .any(|(_, node)| node.label() == Some("Show in taskbar"))
             );
         }
         app.demo_windows_controls = true;
@@ -3591,7 +3727,7 @@ mod tests {
             accessible_frame(&ctx, &mut app, vec![]);
         }
         let tree = accessible_frame(&ctx, &mut app, vec![]);
-        let control = accessible_node(&tree, "Show Winamp in taskbar", Role::CheckBox);
+        let control = accessible_node(&tree, "Show in taskbar", Role::CheckBox);
         accessible_frame(
             &ctx,
             &mut app,
@@ -3662,15 +3798,12 @@ mod tests {
         let (ctx, mut app) = accessible_app("x11-taskbar-setting");
         app.taskbar_hiding_supported = true;
         let text = settings_text(&ctx, &mut app, "Show in taskbar");
-        assert!(text.iter().any(|text| text == "Winamp skins"));
+        assert!(text.iter().any(|text| text == "Mini player"));
         assert!(text.iter().any(|text| text == "Show in taskbar"));
 
         app.taskbar_hiding_supported = false;
         let text = settings_text(&ctx, &mut app, "Show in taskbar");
-        assert_eq!(
-            text.iter().any(|text| text == "Winamp skins"),
-            cfg!(windows)
-        );
+        assert_eq!(text.iter().any(|text| text == "Mini player"), cfg!(windows));
         app.backend.shutdown();
     }
 
@@ -5699,90 +5832,6 @@ mod tests {
         );
         app.backend.shutdown();
         let _ = std::fs::remove_dir_all(root);
-    }
-
-    /// The frame rate is a dial with detents: it stops at the rates
-    /// worth having, names the one it is on, and moving it one notch
-    /// lands on the next of them rather than somewhere in between.
-    #[cfg(feature = "milkdrop")]
-    #[test]
-    fn the_frame_rate_dial_steps_between_its_stops() {
-        let root =
-            std::env::temp_dir().join(format!("spotifast-fps-dial-test-{}", std::process::id()));
-        let dirs = AppDirs {
-            config: root.join("config"),
-            state: root.join("state"),
-            cache: root.join("cache"),
-        };
-        let ctx = egui::Context::default();
-        let waker = crate::backend::Waker::default();
-        waker.attach(&ctx);
-        let mut app = App::new(
-            &waker,
-            dirs,
-            Settings::default(),
-            AppOptions {
-                media_controls: false,
-                restore_sign_in: false,
-                tray: false,
-            },
-        );
-        app.attach(&ctx);
-        populate(&mut app);
-        app.settings.milkdrop_screen_hz = 144;
-        app.settings.milkdrop_fps = 60;
-        app.open(Page::Settings);
-
-        // Read labels from the real Settings page.
-        let drawn = |app: &mut App, ctx: &egui::Context| -> Vec<String> {
-            let input = egui::RawInput {
-                // Draw the full Settings page, including MilkDrop.
-                screen_rect: Some(egui::Rect::from_min_size(
-                    egui::Pos2::ZERO,
-                    egui::vec2(1280.0, 4000.0),
-                )),
-                ..Default::default()
-            };
-            let mut output = ctx.run_ui(input, |ui| app.frame_ui(ui));
-            output.textures_delta.clear();
-            let mut said = Vec::new();
-            fn walk(shape: &egui::epaint::Shape, said: &mut Vec<String>) {
-                match shape {
-                    egui::epaint::Shape::Text(text) => said.push(text.galley.job.text.clone()),
-                    egui::epaint::Shape::Vec(shapes) => {
-                        shapes.iter().for_each(|shape| walk(shape, said))
-                    }
-                    _ => {}
-                }
-            }
-            for clipped in &output.shapes {
-                walk(&clipped.shape, &mut said);
-            }
-            said
-        };
-
-        for _ in 0..3 {
-            let said = drawn(&mut app, &ctx);
-            assert!(
-                said.iter().any(|text| text.contains("60 fps")),
-                "the dial names the rate it is on: {said:?}"
-            );
-        }
-
-        // Every stop can be reached, and each names itself.
-        for (rate, expected) in [
-            (144, "144 fps, your screen"),
-            (0, "Uncapped"),
-            (30, "30 fps"),
-        ] {
-            app.settings.milkdrop_fps = rate;
-            let said = drawn(&mut app, &ctx);
-            assert!(
-                said.iter().any(|text| text == expected),
-                "the dial on {rate} should read {expected}: {said:?}"
-            );
-        }
-        app.backend.shutdown();
     }
 
     /// Rule: side-panel headers stay on one line at their narrowest width.
