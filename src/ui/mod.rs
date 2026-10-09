@@ -19,6 +19,7 @@ pub mod search;
 pub mod settings;
 pub mod show;
 pub mod sidebar;
+pub(crate) mod theme_marketplace;
 pub mod topbar;
 mod update;
 pub mod widgets;
@@ -76,6 +77,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
         central(app, ui);
         keep_room_for_panels(app, ctx);
     }
+    theme_marketplace::show(app, ctx);
     devices::popup(app, ctx);
     dialogs::show(app, ctx);
     update::show(app, ctx);
@@ -253,11 +255,24 @@ fn page_tint(app: &mut App) -> Option<Color32> {
 
 fn central(app: &mut App, ui: &mut egui::Ui) {
     let palette = app.palette;
-    let tint = page_tint(app);
+    let sleek = theme::marketplace::appearance(ui.ctx());
+    let tint = if sleek.is_some() {
+        None
+    } else {
+        page_tint(app)
+    };
     egui::CentralPanel::default()
         .frame(Frame::new().fill(palette.window))
         .show(ui, |ui| {
             let rect = ui.max_rect();
+            if sleek.is_some() {
+                widgets::paint_vertical_gradient(
+                    ui,
+                    Rect::from_min_size(rect.min, vec2(rect.width(), 200.0)),
+                    palette.window.lerp_to_gamma(egui::Color32::BLACK, 0.18),
+                    palette.window,
+                );
+            }
             if let Some(tint) = tint {
                 let strength = if matches!(
                     app.page(),

@@ -7,6 +7,7 @@ src/ui/lyrics.rs
 src/ui/widgets.rs
 src/app.rs
 src/ui/settings.rs
+src/ui/theme_marketplace.rs
 src/api/models.rs
 src/app/radio.rs
 src/model.rs

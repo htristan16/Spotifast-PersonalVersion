@@ -1108,6 +1108,10 @@ pub enum Action {
     SetLanguage(crate::settings::LanguageChoice),
     OpenThemesFolder,
     ImportSpicetifyTheme,
+    OpenThemeMarketplace,
+    InstallSleek,
+    ApplySleek(String),
+    RemoveSleek,
     SetCustomTheme(String),
     ReloadThemes,
     SetLibrarySort {

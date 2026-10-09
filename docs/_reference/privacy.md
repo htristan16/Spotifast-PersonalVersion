@@ -49,6 +49,10 @@ Spotifast connects only to the services below.
 - **Your local network.** Spotifast looks for Spotify Connect speakers over
   mDNS and talks to the ones you choose.
 
+The native theme marketplace is bundled and works offline. Browsing,
+installing, applying and removing its themes send no network requests.
+Its **View source** link opens GitHub in your browser.
+
 Links you open from the app, such as the Winamp Skin Museum or this website,
 open in your browser.
 

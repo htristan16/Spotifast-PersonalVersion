@@ -4,6 +4,7 @@
 //! All colors use [`Palette`] so light, dark, and album-art-tinted themes stay
 //! consistent.
 
+pub mod marketplace;
 pub mod spicetify;
 
 use crate::i18n::{Locale, gettext};
@@ -604,7 +605,11 @@ pub fn circle_button(
     });
     if ui.is_rect_visible(rect) {
         let hovered = response.hovered();
-        let grow = if hovered { 1.05 } else { 1.0 };
+        let grow = if hovered && marketplace::appearance(ui.ctx()).is_none() {
+            1.05
+        } else {
+            1.0
+        };
         let radius = diameter / 2.0 * grow;
         let fill = if hovered { fill_hover } else { fill };
         ui.painter().circle_filled(rect.center(), radius, fill);
@@ -671,7 +676,8 @@ pub fn pill_button(ui: &mut egui::Ui, palette: &Palette, label: &str, primary: b
     });
     if ui.is_rect_visible(rect) {
         let hovered = response.hovered();
-        let radius = rect.height() / 2.0;
+        let sleek = marketplace::appearance(ui.ctx()).is_some();
+        let radius = if sleek { 8.0 } else { rect.height() / 2.0 };
         if primary {
             let fill = if hovered {
                 palette.accent_hover
@@ -684,7 +690,10 @@ pub fn pill_button(ui: &mut egui::Ui, palette: &Palette, label: &str, primary: b
             ui.painter().rect_stroke(
                 rect,
                 radius,
-                Stroke::new(1.0, stroke_color),
+                Stroke::new(
+                    if sleek { 2.0 } else { 1.0 },
+                    if sleek { palette.accent } else { stroke_color },
+                ),
                 egui::StrokeKind::Inside,
             );
         }
@@ -776,7 +785,12 @@ fn soft_button_inner(
         } else {
             palette.surface
         };
-        ui.painter().rect_filled(rect, rect.height() / 2.0, fill);
+        let radius = if marketplace::appearance(ui.ctx()).is_some() {
+            8.0
+        } else {
+            rect.height() / 2.0
+        };
+        ui.painter().rect_filled(rect, radius, fill);
         let mut x = rect.left() + padding.x;
         if let Some(icon) = icon {
             let icon = if dismiss.is_some() && hovered {

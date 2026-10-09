@@ -982,6 +982,11 @@ pub fn apply_flags(app: &mut App, page: Option<&str>, show: Option<&str>) {
                     }
                 }
             }
+            "marketplace" => app.theme_marketplace_open = true,
+            "sleek" => {
+                app.settings.sleek_installed = true;
+                app.settings.sleek_scheme = Some("Wealthy".into());
+            }
             "focus" => app.settings.sidebar_visible = false,
             // A cold start: no device is playing anything, and all the app
             // has is the song the last session ended on.

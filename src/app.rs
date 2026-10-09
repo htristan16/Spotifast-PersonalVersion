@@ -288,6 +288,7 @@ pub struct App {
     pub(crate) reveal_theme_changes: bool,
     pub custom_themes: theme::Catalog,
     pub spicetify_importing: bool,
+    pub theme_marketplace_open: bool,
 
     pub auth: AuthStatus,
     pub user: Option<User>,
@@ -732,6 +733,7 @@ impl App {
         let mut app = Self {
             custom_themes: theme::Catalog::default(),
             spicetify_importing: false,
+            theme_marketplace_open: false,
             dirs,
             settings,
             applied_proxy,
@@ -3127,7 +3129,11 @@ impl App {
                 Palette::light()
             }
         });
-        if self.applied_dark != Some(dark) || self.palette != palette {
+        let appearance = theme::marketplace::selected(&self.settings).map(|scheme| scheme.style);
+        if self.applied_dark != Some(dark)
+            || self.palette != palette
+            || theme::marketplace::appearance(ctx) != appearance
+        {
             // The first colours need no reveal, and the mini player's window
             // is drawn by its skin.
             if self.reveal_theme_changes
@@ -3141,6 +3147,7 @@ impl App {
             }
             self.palette = palette;
             theme::apply(ctx, &self.palette);
+            theme::marketplace::apply(ctx, appearance);
             self.applied_dark = Some(dark);
             self.accents.clear();
             self.accent_pending.clear();
@@ -8969,6 +8976,7 @@ impl App {
             }
             Action::SetTheme(choice) => {
                 self.settings.theme = choice;
+                self.settings.sleek_scheme = None;
                 self.settings.custom_theme = None;
                 self.settings.custom_theme_cache = None;
                 self.mark_settings_dirty();
@@ -8983,6 +8991,7 @@ impl App {
             }
             Action::SetCustomTheme(filename) => {
                 if let Some(theme) = self.custom_themes.find(&filename) {
+                    self.settings.sleek_scheme = None;
                     self.settings.custom_theme_cache = Some(theme.clone());
                     self.settings.custom_theme = Some(filename);
                     self.mark_settings_dirty();
@@ -8994,6 +9003,28 @@ impl App {
                 let waker = Waker::default();
                 waker.attach(ctx);
                 self.load_custom_themes(&waker);
+            }
+            Action::OpenThemeMarketplace => self.theme_marketplace_open = true,
+            Action::InstallSleek => {
+                self.settings.sleek_installed = true;
+                self.mark_settings_dirty();
+            }
+            Action::ApplySleek(name) => {
+                if self.settings.sleek_installed && theme::marketplace::scheme(&name).is_some() {
+                    self.settings.sleek_scheme = Some(name);
+                    self.settings.custom_theme = None;
+                    self.settings.custom_theme_cache = None;
+                    self.mark_settings_dirty();
+                    ctx.set_theme(self.theme_preference());
+                    self.apply_theme(ctx);
+                }
+            }
+            Action::RemoveSleek => {
+                self.settings.sleek_installed = false;
+                self.settings.sleek_scheme = None;
+                self.mark_settings_dirty();
+                ctx.set_theme(self.theme_preference());
+                self.apply_theme(ctx);
             }
             Action::ImportSpicetifyTheme => {
                 if !self.spicetify_importing {
@@ -22834,5 +22865,90 @@ mod tests {
             assert!(app.actions.is_empty());
             assert_eq!(app.settings.custom_theme.as_deref(), Some("Existing.json"));
         }
+    }
+    #[test]
+    fn native_marketplace_install_apply_restore_and_remove() {
+        let mut app = test_app("native-marketplace");
+        let ctx = egui::Context::default();
+        let original = app.palette;
+        app.apply(Action::ApplySleek("Wealthy".into()), &ctx);
+        assert_eq!(app.palette, original, "uninstalled packs cannot apply");
+        app.apply(Action::InstallSleek, &ctx);
+        assert!(app.settings.sleek_installed);
+        assert_eq!(
+            app.palette, original,
+            "installing does not change appearance"
+        );
+        app.apply(Action::ApplySleek("Wealthy".into()), &ctx);
+        let sleek = theme::marketplace::scheme("Wealthy").unwrap();
+        assert_eq!(app.palette, sleek.palette);
+        assert_eq!(theme::marketplace::appearance(&ctx), Some(sleek.style));
+        let settings: Settings =
+            serde_json::from_str(&serde_json::to_string(&app.settings).unwrap()).unwrap();
+        assert_eq!(settings.cached_palette(), Some(sleek.palette));
+        app.apply(Action::ApplySleek("missing".into()), &ctx);
+        assert_eq!(app.settings.sleek_scheme.as_deref(), Some("Wealthy"));
+        app.apply(Action::SetTheme(ThemeChoice::Light), &ctx);
+        assert_eq!(app.palette, Palette::light());
+        assert!(theme::marketplace::appearance(&ctx).is_none());
+        assert!(
+            app.settings.sleek_installed,
+            "switching themes retains installation"
+        );
+        app.apply(Action::ApplySleek("Cherry".into()), &ctx);
+        app.apply(Action::RemoveSleek, &ctx);
+        assert!(!app.settings.sleek_installed);
+        assert!(app.settings.sleek_scheme.is_none());
+        assert_eq!(app.palette, Palette::light());
+        assert!(theme::marketplace::appearance(&ctx).is_none());
+    }
+    #[test]
+    fn marketplace_controls_are_accessible_and_visible_in_a_narrow_window() {
+        use egui::accesskit::{Action as AccessibleAction, ActionRequest, Role, TreeId};
+        let ctx = egui::Context::default();
+        ctx.enable_accesskit();
+        let mut app = test_app("marketplace-controls");
+        app.locale = crate::i18n::Locale::English;
+        app.theme_marketplace_open = true;
+        app.attach(&ctx);
+        let mut draw = |events| {
+            let mut output = ctx.run_ui(
+                egui::RawInput {
+                    screen_rect: Some(egui::Rect::from_min_size(
+                        egui::Pos2::ZERO,
+                        egui::vec2(800.0, 600.0),
+                    )),
+                    events,
+                    ..Default::default()
+                },
+                |ui| crate::ui::theme_marketplace::show(&mut app, ui.ctx()),
+            );
+            output.textures_delta.clear();
+            app.apply_actions(&ctx);
+            output.platform_output.accesskit_update.unwrap()
+        };
+        for label in ["Install", "Apply", "Remove"] {
+            draw(Vec::new());
+            draw(Vec::new());
+            let tree = draw(Vec::new());
+            let (id, node) = tree
+                .nodes
+                .iter()
+                .find(|(_, node)| node.role() == Role::Button && node.label() == Some(label))
+                .expect(label);
+            let bounds = node.bounds().unwrap();
+            assert!(
+                bounds.y1 <= 350.0,
+                "{label} must be visible above the preview without scrolling"
+            );
+            draw(vec![egui::Event::AccessKitActionRequest(ActionRequest {
+                target_tree: TreeId::ROOT,
+                target_node: *id,
+                action: AccessibleAction::Click,
+                data: None,
+            })]);
+        }
+        assert!(!app.settings.sleek_installed);
+        assert!(app.settings.sleek_scheme.is_none());
     }
 }

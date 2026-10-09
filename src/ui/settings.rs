@@ -823,8 +823,8 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
             ),
         ),
         RowText::new(
-            gettext(locale, "Spicetify themes"),
-            gettext(locale, "Import color.ini schemes for the whole app. CSS and JavaScript are not imported."),
+            gettext(locale, "Theme marketplace"),
+            gettext(locale, "Install native theme designs or import Spicetify color schemes."),
         ),
     ];
     if section_matches(&needle, &appearance, &appearance_rows) {
@@ -843,12 +843,16 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                 theme_buttons_width,
                 |ui| {
                     ui.with_layout(Layout::top_down(Align::Max), |ui| {
-                        let selected = app
-                            .settings
-                            .custom_theme
-                            .as_deref()
-                            .map(|filename| fastframe_theme::display_name(filename).into())
-                            .unwrap_or_else(|| app.settings.theme.label(locale));
+                        let selected =
+                            if let Some(scheme) = theme::marketplace::selected(&app.settings) {
+                                std::borrow::Cow::Owned(format!("Sleek · {}", scheme.name))
+                            } else {
+                                app.settings
+                                    .custom_theme
+                                    .as_deref()
+                                    .map(|filename| fastframe_theme::display_name(filename).into())
+                                    .unwrap_or_else(|| app.settings.theme.label(locale))
+                            };
                         let response = egui::ComboBox::from_id_salt("appearance_theme")
                             .selected_text(selected.as_ref())
                             .width(200.0_f32.min(ui.available_width()))
@@ -856,13 +860,30 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                                 for choice in ThemeChoice::ALL {
                                     if ui
                                         .selectable_label(
-                                            app.settings.custom_theme.is_none()
+                                            theme::marketplace::selected(&app.settings).is_none()
+                                                && app.settings.custom_theme.is_none()
                                                 && app.settings.theme == choice,
                                             choice.label(locale).as_ref(),
                                         )
                                         .clicked()
                                     {
                                         app.actions.push(Action::SetTheme(choice));
+                                    }
+                                }
+                                if app.settings.sleek_installed {
+                                    ui.separator();
+                                    for scheme in theme::marketplace::schemes() {
+                                        if ui
+                                            .selectable_label(
+                                                app.settings.sleek_scheme.as_deref()
+                                                    == Some(scheme.name.as_str()),
+                                                format!("Sleek · {}", scheme.name),
+                                            )
+                                            .clicked()
+                                        {
+                                            app.actions
+                                                .push(Action::ApplySleek(scheme.name.clone()));
+                                        }
                                     }
                                 }
                                 if app.custom_themes.picker_themes().next().is_some() {
@@ -935,6 +956,17 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                 &appearance,
                 appearance_rows.last().unwrap(),
                 |ui| {
+                    if theme::soft_button(
+                        ui,
+                        &palette,
+                        Some(Icon::Globe),
+                        &gettext(locale, "Browse themes"),
+                        false,
+                    )
+                    .clicked()
+                    {
+                        app.actions.push(Action::OpenThemeMarketplace);
+                    }
                     ui.add_enabled_ui(!app.spicetify_importing, |ui| {
                         if theme::soft_button(
                             ui,

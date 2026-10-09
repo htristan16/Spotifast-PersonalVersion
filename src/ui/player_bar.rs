@@ -46,7 +46,11 @@ pub(crate) fn end_tint_session(ctx: &egui::Context) {
 
 pub fn show(app: &mut App, ui: &mut egui::Ui) {
     let palette = app.palette;
-    let fill = eased_fill(ui.ctx(), palette.panel, app.now_playing_tint());
+    let sleek = theme::marketplace::appearance(ui.ctx());
+    let fill = sleek.map_or_else(
+        || eased_fill(ui.ctx(), palette.panel, app.now_playing_tint()),
+        |style| style.player,
+    );
     egui::Panel::bottom("player-bar")
         .exact_size(theme::PLAYER_BAR_HEIGHT)
         .resizable(false)
@@ -84,11 +88,15 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
             if empty.clicked() {
                 app.actions.push(Action::CyclePlayerBarVis);
             }
-            ui.painter().hline(
-                rect.x_range(),
-                rect.top() + 0.5,
-                egui::Stroke::new(1.0, palette.outline),
-            );
+            if sleek.is_some() {
+                sleek_seek(app, ui, now.as_ref(), behind);
+            } else {
+                ui.painter().hline(
+                    rect.x_range(),
+                    rect.top() + 0.5,
+                    egui::Stroke::new(1.0, palette.outline),
+                );
+            }
             let width = rect.width();
             let side = (width * 0.3).clamp(200.0, 420.0);
             let cy = rect.center().y;
@@ -581,7 +589,8 @@ fn transport(app: &mut App, ui: &mut egui::Ui, now: Option<&NowPlaying>, region:
     // above the bar's midline and the progress row 23px below it. Measured
     // on screen this puts equal breathing room above and beneath the
     // cluster.
-    let cy = region.center().y - 8.0;
+    let sleek = theme::marketplace::appearance(ui.ctx());
+    let cy = region.center().y + if sleek.is_some() { 3.0 } else { -8.0 };
     let enabled = now.is_some_and(|now| now.can_control) || app.is_connected();
     let playing = now.is_some_and(|now| now.playing);
     let loading = now.is_some_and(|now| now.loading);
@@ -669,21 +678,28 @@ fn transport(app: &mut App, ui: &mut egui::Ui, now: Option<&NowPlaying>, region:
             palette.text
         };
         let mut cell = centered(ui, disc);
-        if theme::circle_button(
-            &mut cell,
-            icon,
-            36.0,
-            palette.text,
-            hover,
-            palette.window,
-            &if playing {
-                gettext(app.locale, "Pause")
-            } else {
-                gettext(app.locale, "Play")
-            },
-        )
-        .clicked()
-        {
+        let label = gettext(app.locale, if playing { "Pause" } else { "Play" });
+        let button = if let Some(style) = sleek {
+            theme::icon_button(
+                &mut cell,
+                icon,
+                19.0,
+                style.play_button,
+                palette.accent_hover,
+                &label,
+            )
+        } else {
+            theme::circle_button(
+                &mut cell,
+                icon,
+                36.0,
+                palette.text,
+                hover,
+                palette.window,
+                &label,
+            )
+        };
+        if button.clicked() {
             app.actions.push(Action::TogglePlay);
         }
     }
@@ -731,6 +747,10 @@ fn transport(app: &mut App, ui: &mut egui::Ui, now: Option<&NowPlaying>, region:
     .clicked()
     {
         app.actions.push(Action::CycleRepeat);
+    }
+
+    if sleek.is_some() {
+        return;
     }
 
     // Progress row, just below the buttons (disc bottom + 6px gap + half of
@@ -932,6 +952,76 @@ fn extras(app: &mut App, ui: &mut egui::Ui, now: Option<&NowPlaying>) {
     .clicked()
     {
         app.actions.push(Action::ToggleLyricsPanel);
+    }
+}
+
+/// The top-edge seek bar keeps the shared slider's keyboard and accessibility
+/// behavior, with times shown on hover or while previewing a seek.
+fn sleek_seek(app: &mut App, ui: &mut egui::Ui, now: Option<&NowPlaying>, bar: Rect) {
+    let duration = now.map_or(0, |now| now.duration_ms);
+    let position = now.map_or(0, |now| now.position_ms);
+    let rect = Rect::from_min_size(bar.min - vec2(0.0, 6.0), vec2(bar.width(), 16.0));
+    let mut child = ui.new_child(
+        UiBuilder::new()
+            .max_rect(rect)
+            .layout(Layout::left_to_right(Align::Center)),
+    );
+    let fraction = if duration > 0 {
+        position as f32 / duration as f32
+    } else {
+        0.0
+    };
+    child.add_enabled_ui(duration > 0, |ui| {
+        match thin_slider(
+            ui,
+            &app.palette,
+            egui::Id::new("sleek-seek-slider"),
+            &gettext(app.locale, "Playback position (%)"),
+            fraction,
+            bar.width(),
+            None,
+        ) {
+            SliderEvent::Dragging(value) => app.seek_preview = Some(value),
+            SliderEvent::Committed(value) => {
+                app.seek_preview = None;
+                app.actions
+                    .push(Action::Seek((value * duration as f32) as u32));
+            }
+            SliderEvent::None => {}
+        }
+    });
+    if ui.rect_contains_pointer(rect.expand(4.0))
+        || app.seek_preview.is_some()
+        || ui.memory(|memory| memory.has_focus(egui::Id::new("sleek-seek-slider")))
+    {
+        let position = app
+            .seek_preview
+            .map_or(position, |value| (value * duration as f32) as u32);
+        for (text, point, align) in [
+            (
+                util::format_duration_ms(position),
+                pos2(bar.left() + 8.0, bar.top() - 24.0),
+                egui::Align2::LEFT_TOP,
+            ),
+            (
+                util::format_duration_ms(duration),
+                pos2(bar.right() - 8.0, bar.top() - 24.0),
+                egui::Align2::RIGHT_TOP,
+            ),
+        ] {
+            let painter = ui.ctx().layer_painter(egui::LayerId::new(
+                egui::Order::Foreground,
+                egui::Id::new("sleek-seek-times"),
+            ));
+            let galley = painter.layout_no_wrap(text, theme::regular(11.5), app.palette.secondary);
+            let label = align.anchor_size(point, galley.size());
+            painter.rect_filled(
+                label.expand(4.0),
+                8.0,
+                app.palette.panel.gamma_multiply(0.8),
+            );
+            painter.galley(label.min, galley, app.palette.secondary);
+        }
     }
 }
 

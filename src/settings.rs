@@ -245,6 +245,10 @@ pub struct Settings {
     pub language: LanguageChoice,
     /// Filename selected from the local themes directory.
     pub custom_theme: Option<String>,
+    /// Bundled native marketplace packages enabled by the user.
+    pub sleek_installed: bool,
+    /// Active native Sleek scheme. Unknown names fall back to ordinary themes.
+    pub sleek_scheme: Option<String>,
     /// Last accepted appearance, retained if its source file becomes unavailable.
     #[serde(
         default,
@@ -412,6 +416,8 @@ impl Default for Settings {
             theme: ThemeChoice::System,
             language: LanguageChoice::System,
             custom_theme: None,
+            sleek_installed: false,
+            sleek_scheme: None,
             custom_theme_cache: None,
             system_theme_cache: None,
             home: HomeSettings::default(),
@@ -478,6 +484,9 @@ fn default_buffer_ms() -> u32 {
 
 impl Settings {
     pub(crate) fn cached_palette(&self) -> Option<crate::theme::Palette> {
+        if let Some(scheme) = crate::theme::marketplace::selected(self) {
+            return Some(scheme.palette);
+        }
         let theme = if self.custom_theme.is_some() {
             self.custom_theme_cache.as_ref()
         } else if self.theme == ThemeChoice::System {

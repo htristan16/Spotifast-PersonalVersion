@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Native Sleek and marketplace visual review</title>
+<style>
+body{font:16px system-ui;margin:24px;background:#181a1b;color:#eee}select,button{font:inherit;margin:6px;padding:8px}img{max-width:100%;height:auto}a{color:#9ddd78}figure{margin:20px 0}figcaption{margin-top:10px}
+</style>
+<h1>Native Sleek and theme marketplace</h1>
+<p>Actual Linux/X11 demo captures. Sleek ports the source CSS appearance into native widgets: gradient navigation, filled selection, rounded artwork, quieter controls, outlined toggles, styled track rows and a full-width player seek bar. The default light and dark layouts stay available. The curated catalog starts with Sleek's 19 bundled schemes and works offline.</p>
+<label>Theme <select id="theme"><option>dark</option><option>light</option></select></label>
+<label>Size <select id="size"><option value="">1280 × 800</option><option value="-narrow">800 × 600</option></select></label>
+<label>View <select id="view"><option value="home">Standard Home</option><option value="sleek">Sleek Wealthy</option><option value="marketplace">Marketplace</option><option value="installed">Marketplace, installed</option><option value="active">Marketplace, active Sleek</option><option value="empty">Marketplace, empty search</option><option value="schemes">Marketplace, scheme menu</option><option value="tracks">Sleek track list</option><option value="mini">Sleek mini player</option><option value="seek">Sleek seek hover</option></select></label>
+<button id="before">Before</button><button id="after">After</button>
+<figure><img id="shot" alt="Native theme comparison"><figcaption id="caption"></figcaption></figure>
+<p>Before Home captures were taken before implementation. Sleek's baseline is the previous color.ini import using the same Wealthy scheme with native appearance disabled. Marketplace Before shows the earlier Appearance settings, since the marketplace did not exist. Demo artwork requests are unavailable in this environment, so the app's normal placeholder artwork is visible. No screenshot is a mockup.</p>
+<p>Install enables Sleek without changing the active theme. Apply selects the previewed scheme; Remove returns an active selection to the built-in appearance and preserves imported files. Package updates arrive with application updates. This is a native port, not a Spotify CSS or JavaScript runtime. <a href="https://github.com/spicetify/spicetify-themes/tree/c432012478e1f2e2ffccca8e943e188af40d6190/Sleek">Pinned upstream source</a>. MIT attribution is included in the theme package.</p>
+<script>
+let stage='after';
+function render(){
+ const theme=document.getElementById('theme').value,size=document.getElementById('size').value,view=document.getElementById('view').value;
+ let path,caption;
+ if(view==='home'){path=stage+'-'+theme+size+'.png';caption=stage+' standard '+theme;}
+ else if(view==='sleek'){path=stage+'-sleek'+size+'.png';caption=stage==='before'?'Imported Wealthy palette, standard geometry':'Native Sleek, Wealthy';}
+ else if(view==='marketplace'){path=stage==='before'?'before-settings-'+theme+'.png':'marketplace-'+theme+size+'.png';caption=stage==='before'?'Previous Appearance settings':'Marketplace';}
+ else if(view==='mini'){path=stage==='before'?'before-sleek-mini.png':'sleek-mini.png';caption=stage+' Sleek mini player';}
+ else{path=({'active':'marketplace-active','installed':'marketplace-installed','empty':'marketplace-empty','schemes':'marketplace-schemes','tracks':'sleek-tracks','mini':'sleek-mini','seek':'sleek-seek'})[view]+'.png';caption=view;}
+ document.getElementById('shot').src=path;document.getElementById('caption').textContent=caption;
+ document.getElementById('before').disabled=!['home','sleek','marketplace','mini'].includes(view);
+ document.getElementById('theme').disabled=!['home','marketplace'].includes(view);
+ document.getElementById('size').disabled=!['home','sleek','marketplace','mini'].includes(view);
+}
+document.getElementById('before').onclick=()=>{stage='before';render()};document.getElementById('after').onclick=()=>{stage='after';render()};document.querySelectorAll('select').forEach(select=>select.onchange=render);render();
+</script>
+</html>

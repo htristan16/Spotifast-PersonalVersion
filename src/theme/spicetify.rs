@@ -15,6 +15,7 @@ const MAX_SCHEMES: usize = 64;
 pub struct Scheme {
     pub name: String,
     pub palette: Palette,
+    pub colors: BTreeMap<String, Color32>,
 }
 
 /// Literal colors only. References need the user's Spicetify environment and
@@ -173,6 +174,7 @@ pub fn parse(text: &str) -> Result<Vec<Scheme>, String> {
         .map(|(name, colors)| Scheme {
             name,
             palette: palette(&colors),
+            colors,
         })
         .collect())
 }

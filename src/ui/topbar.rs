@@ -175,10 +175,12 @@ fn nav_button(
         } else {
             egui::Color32::from_black_alpha(20)
         };
-        ui.painter().circle_filled(rect.center(), 16.0, fill);
+        if theme::marketplace::appearance(ui.ctx()).is_none() {
+            ui.painter().circle_filled(rect.center(), 16.0, fill);
+        }
         let color = if !enabled {
             palette.dim
-        } else if response.hovered() {
+        } else if response.hovered() || theme::marketplace::appearance(ui.ctx()).is_some() {
             palette.text
         } else {
             palette.secondary

@@ -502,6 +502,14 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
             bottom: if expanded_art { 0 } else { 8 },
         }));
     let response = panel.show(ui, |ui| {
+        if let Some(style) = theme::marketplace::appearance(ui.ctx()) {
+            sleek_gradient(
+                ui.painter(),
+                ui.max_rect().expand2(vec2(12.0, 12.0)),
+                style.sidebar,
+                style.player,
+            );
+        }
         let art_rect = expanded_art.then(|| expanded_art_rect(ui));
         if let Some(rect) = art_rect.filter(|_| !floating_art) {
             reserve_expanded_art(ui, rect);
@@ -800,7 +808,14 @@ fn nav_row(
 ) -> egui::Response {
     let (rect, response) = ui.allocate_exact_size(vec2(ui.available_width(), 40.0), Sense::click());
     if ui.is_rect_visible(rect) {
-        let color = if active || response.hovered() {
+        let style = theme::marketplace::appearance(ui.ctx());
+        if let Some(style) = style.filter(|_| active) {
+            ui.painter()
+                .rect_filled(rect.shrink2(vec2(0.0, 3.0)), 8.0, style.nav_active);
+        }
+        let color = if let Some(style) = style.filter(|_| active) {
+            style.nav_text
+        } else if active || response.hovered() {
             palette.text
         } else {
             palette.secondary
@@ -851,11 +866,13 @@ fn contents(app: &mut App, ui: &mut egui::Ui, grid_art: Option<Rect>) {
         app.actions.push(Action::FocusSearch);
     }
     ui.add_space(10.0);
-    ui.painter().hline(
-        ui.max_rect().x_range().shrink(4.0),
-        ui.cursor().top(),
-        egui::Stroke::new(1.0, palette.outline),
-    );
+    if theme::marketplace::appearance(ui.ctx()).is_none() {
+        ui.painter().hline(
+            ui.max_rect().x_range().shrink(4.0),
+            ui.cursor().top(),
+            egui::Stroke::new(1.0, palette.outline),
+        );
+    }
     ui.add_space(10.0);
 
     let filter_id = egui::Id::new("sidebar-filter");
@@ -2585,4 +2602,22 @@ mod ordering_tests {
         assert_eq!(full_playlist_order(&app).last().unwrap(), LIKED_SONGS_KEY);
         app.backend.shutdown();
     }
+}
+
+/// Sleek's top-right sidebar to bottom-left player gradient.
+pub(super) fn sleek_gradient(
+    painter: &egui::Painter,
+    rect: Rect,
+    sidebar: egui::Color32,
+    player: egui::Color32,
+) {
+    let mut mesh = egui::Mesh::default();
+    let middle = sidebar.lerp_to_gamma(player, 0.5);
+    mesh.colored_vertex(rect.left_top(), middle);
+    mesh.colored_vertex(rect.right_top(), sidebar);
+    mesh.colored_vertex(rect.right_bottom(), middle);
+    mesh.colored_vertex(rect.left_bottom(), player);
+    mesh.add_triangle(0, 1, 2);
+    mesh.add_triangle(0, 2, 3);
+    painter.add(mesh);
 }

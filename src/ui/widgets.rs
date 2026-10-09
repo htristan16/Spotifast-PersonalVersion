@@ -187,8 +187,19 @@ pub fn paint_shadow(ui: &Ui, palette: &Palette, rect: Rect, radius: f32) {
         return;
     }
     let shadow = egui::epaint::Shadow {
-        offset: [0, 10],
-        blur: 28,
+        offset: [
+            0,
+            if theme::marketplace::appearance(ui.ctx()).is_some() {
+                5
+            } else {
+                10
+            },
+        ],
+        blur: if theme::marketplace::appearance(ui.ctx()).is_some() {
+            10
+        } else {
+            28
+        },
         spread: 0,
         color: Color32::from_black_alpha(120),
     };
@@ -1334,9 +1345,14 @@ fn track_row_contents(
         ui.painter().rect_filled(
             rect,
             CornerRadius::same(6),
-            palette
-                .secondary
-                .gamma_multiply(if hovered { 0.30 } else { 0.20 }),
+            theme::marketplace::appearance(ui.ctx()).map_or_else(
+                || {
+                    palette
+                        .secondary
+                        .gamma_multiply(if hovered { 0.30 } else { 0.20 })
+                },
+                |style| style.main_secondary,
+            ),
         );
     } else if hovered {
         ui.painter().rect_filled(
@@ -1454,10 +1470,14 @@ fn track_row_contents(
         palette.dim
     } else if is_current {
         palette.accent
+    } else if theme::marketplace::appearance(ui.ctx()).is_some() && !hovered {
+        palette.secondary
     } else {
         palette.text
     };
-    let subtitle_color = if hovered {
+    let subtitle_color = if is_current && theme::marketplace::appearance(ui.ctx()).is_some() {
+        palette.accent
+    } else if hovered {
         palette.text
     } else {
         palette.secondary
@@ -2372,7 +2392,13 @@ pub fn card(
             );
         }
         let image_rect = Rect::from_min_size(rect.min + vec2(PAD, PAD), Vec2::splat(image_size));
-        let radius = if circular { image_size / 2.0 } else { 6.0 };
+        let radius = if circular {
+            image_size / 2.0
+        } else if theme::marketplace::appearance(ui.ctx()).is_some() {
+            8.0
+        } else {
+            6.0
+        };
         paint_shadow(ui, &palette, image_rect, radius);
         paint_cover(
             ui,
@@ -2418,7 +2444,11 @@ pub fn card(
         if playable && hovered {
             let button_rect = Rect::from_center_size(
                 pos2(image_rect.right() - 26.0, image_rect.bottom() - 26.0),
-                Vec2::splat(44.0),
+                Vec2::splat(if theme::marketplace::appearance(ui.ctx()).is_some() {
+                    42.0
+                } else {
+                    44.0
+                }),
             );
             let mut child = ui.new_child(
                 UiBuilder::new()
@@ -2432,7 +2462,7 @@ pub fn card(
                 } else {
                     Icon::PlayFilled
                 },
-                44.0,
+                button_rect.width(),
                 palette.accent,
                 palette.accent_hover,
                 palette.on_accent,
@@ -2669,21 +2699,38 @@ pub fn thin_slider(
             || response.dragged()
             || dragging_value.is_some();
         let bar = Rect::from_center_size(rect.center(), vec2(rect.width(), 4.0));
-        let track_color = if palette.dark {
+        let sleek = theme::marketplace::appearance(ui.ctx());
+        let track_color = if let Some(style) = sleek {
+            style.button_disabled
+        } else if palette.dark {
             Color32::from_white_alpha(50)
         } else {
             Color32::from_black_alpha(40)
         };
-        ui.painter().rect_filled(bar, 2.0, track_color);
+        let radius = if sleek.is_some() { 0.0 } else { 2.0 };
+        ui.painter().rect_filled(bar, radius, track_color);
         let filled = Rect::from_min_max(
             bar.min,
             pos2(bar.left() + bar.width() * shown.clamp(0.0, 1.0), bar.max.y),
         );
-        let fill = if active { palette.accent } else { palette.text };
-        ui.painter().rect_filled(filled, 2.0, fill);
+        let fill = if let Some(style) = sleek {
+            style.playback_bar
+        } else if active {
+            palette.accent
+        } else {
+            palette.text
+        };
+        ui.painter().rect_filled(filled, radius, fill);
         if active {
-            ui.painter()
-                .circle_filled(pos2(filled.right(), bar.center().y), 6.0, palette.text);
+            ui.painter().circle_filled(
+                pos2(filled.right(), bar.center().y),
+                6.0,
+                if sleek.is_some() {
+                    palette.secondary
+                } else {
+                    palette.text
+                },
+            );
         }
     }
     event
@@ -2880,7 +2927,8 @@ pub fn search_field(
 
 /// A toggle drawn as a switch.
 pub fn switch(ui: &mut Ui, palette: &Palette, label: &str, on: &mut bool) -> egui::Response {
-    let size = vec2(40.0, 22.0);
+    let sleek = theme::marketplace::appearance(ui.ctx());
+    let size = vec2(40.0, if sleek.is_some() { 20.0 } else { 22.0 });
     let (rect, mut response) = ui.allocate_exact_size(size, Sense::click());
     if response.clicked() {
         *on = !*on;
@@ -2888,15 +2936,32 @@ pub fn switch(ui: &mut Ui, palette: &Palette, label: &str, on: &mut bool) -> egu
     }
     if ui.is_rect_visible(rect) {
         let t = ui.ctx().animate_bool(response.id, *on);
-        let fill = egui::lerp(
-            egui::Rgba::from(palette.surface_active)..=egui::Rgba::from(palette.accent),
-            t,
-        );
+        let off = if sleek.is_some() {
+            Color32::TRANSPARENT
+        } else {
+            palette.surface_active
+        };
+        let fill = egui::lerp(egui::Rgba::from(off)..=egui::Rgba::from(palette.accent), t);
         ui.painter()
             .rect_filled(rect, rect.height() / 2.0, Color32::from(fill));
-        let knob_x = egui::lerp(rect.left() + 11.0..=rect.right() - 11.0, t);
+        if sleek.is_some() && !*on {
+            ui.painter().rect_stroke(
+                rect,
+                10.0,
+                Stroke::new(1.0, palette.secondary),
+                egui::StrokeKind::Inside,
+            );
+        }
+        let inset = if sleek.is_some() { 10.0 } else { 11.0 };
+        let knob_x = egui::lerp(rect.left() + inset..=rect.right() - inset, t);
+        let color = if sleek.is_some() {
+            palette.secondary.lerp_to_gamma(palette.window, t)
+        } else {
+            Color32::WHITE
+        };
+        let radius = if sleek.is_some() { 6.0 } else { 8.0 };
         ui.painter()
-            .circle_filled(pos2(knob_x, rect.center().y), 8.0, Color32::WHITE);
+            .circle_filled(pos2(knob_x, rect.center().y), radius, color);
     }
     response.widget_info(|| {
         egui::WidgetInfo::selected(egui::WidgetType::Checkbox, ui.is_enabled(), *on, label)

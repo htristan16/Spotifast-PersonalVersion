@@ -395,22 +395,36 @@ fn transport(app: &mut App, ui: &mut Ui, rect: Rect, now: Option<&NowPlaying>, c
         play.painter()
             .circle_filled(at(center, y), diameter / 2.0, app.palette.accent);
         theme::spinner(&mut play, 22.0, app.palette.on_accent);
-    } else if theme::circle_button(
-        &mut play,
-        if playing {
+    } else {
+        let icon = if playing {
             Icon::PauseFilled
         } else {
             Icon::PlayFilled
-        },
-        diameter,
-        app.palette.accent,
-        app.palette.accent_hover,
-        app.palette.on_accent,
-        &gettext(app.locale, if playing { "Pause" } else { "Play" }),
-    )
-    .clicked()
-    {
-        app.actions.push(Action::TogglePlay);
+        };
+        let label = gettext(app.locale, if playing { "Pause" } else { "Play" });
+        let response = if let Some(style) = theme::marketplace::appearance(ui.ctx()) {
+            theme::icon_button(
+                &mut play,
+                icon,
+                22.0,
+                style.play_button,
+                app.palette.accent_hover,
+                &label,
+            )
+        } else {
+            theme::circle_button(
+                &mut play,
+                icon,
+                diameter,
+                app.palette.accent,
+                app.palette.accent_hover,
+                app.palette.on_accent,
+                &label,
+            )
+        };
+        if response.clicked() {
+            app.actions.push(Action::TogglePlay);
+        }
     }
     if button(
         app,

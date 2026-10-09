@@ -72,10 +72,20 @@ both using your computer's protected storage. See
 [Getting started](https://spotifast.rocks/getting-started/) for the full walkthrough
 and [How it connects](https://spotifast.rocks/how-it-connects/) for the details.
 
-## Spicetify color themes
+## Theme marketplace and Spicetify themes
 
-Import a downloaded theme's `color.ini` from **Settings > Appearance >
-Spicetify themes**, then choose any imported scheme under **Theme**.
+Open **Settings > Appearance > Theme marketplace > Browse themes**.
+Install **Sleek**, preview any of its 19 color schemes, then click **Apply**.
+This native port recreates Sleek's gradient sidebar, rounded artwork, track
+styling, transparent playback controls and full-width seek bar. The bundled
+catalog works offline and saves your selection across restarts. Remove a
+package from the marketplace or choose another appearance under **Theme**.
+
+The first catalog contains Sleek. More designs need native ports; Spotify's
+Marketplace extensions and arbitrary CSS do not run in Spotifast.
+
+You can also import a downloaded theme's `color.ini` from the same Settings
+row, then choose any imported scheme under **Theme**.
 The colors apply to the main window and mini player. CSS and JavaScript
 are not imported. [Read the import guide](docs/_reference/settings-and-files.md#import-spicetify-themes).
 

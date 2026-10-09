@@ -226,6 +226,8 @@ main fields are:
 | `audio_cache_mb` | `1024` | On-disk audio cache budget |
 | `theme` | `system` | Follow the system appearance by default; explicit `dark` and `light` choices remain available |
 | `language` | `system` | Since 0.10.0: the interface language. `system` follows the operating system's preferred languages and falls back to English; a tag such as `es`, `de-DE`, `pt-BR` or `zh-Hant` selects that language. An unknown tag follows the system |
+| `sleek_installed` | `false` | Enable the bundled native Sleek package |
+| `sleek_scheme` | `null` | Active Sleek scheme name, used only while the package is installed |
 | `custom_theme` | `null` | Selected JSON filename from the `themes` folder |
 | `custom_theme_cache` | absent | Last accepted custom palette; preserves appearance if its file is missing or invalid |
 | `system_theme_cache` | absent | Last accepted Omarchy palette for Follow system; retained across restarts |
@@ -432,9 +434,44 @@ dark styling of standard controls. Album-art tinting remains an independent
 setting; turn it off for fixed colors throughout. Palettes apply to the main
 window and the mini player. This first format controls colors only.
 
+### Native theme marketplace
+
+Open **Settings > Appearance > Theme marketplace > Browse themes**. The first
+bundled package is **Sleek**, a native port of harbassan's Spicetify theme,
+with all 19 upstream color schemes. Search by theme, author or scheme name;
+**Installed** filters to packages you have enabled. An empty result stays
+visible when no installed package matches.
+
+Choose a scheme to preview it without changing the app. Click **Install**
+to enable the package, then **Apply** to use that scheme throughout the main
+window and mini player. Installed schemes also appear in the **Theme** picker.
+The selected design survives restarting. Choosing light, dark, system or a
+custom JSON theme restores the standard native layout. **Remove** disables
+Sleek and returns an active selection to the built-in theme preference;
+it never deletes imported palettes. Unknown saved scheme names fall back to
+ordinary themes without rejecting the rest of your settings.
+
+The port implements the upstream style in native widgets: diagonal sidebar
+and player colors, filled navigation states, 8 px artwork, smaller shadows,
+6 px scrollbars, outlined toggles, subdued track titles and selected row
+colors. Playback uses a transparent play/pause control and a square seek rail
+across the top of the player bar; times appear on hover and while seeking.
+The scheme supplies the shell colors even when album-art tinting is enabled.
+Spotifast keeps its own controls and navigation. Spotify-specific ads and
+friend feeds have no corresponding native widgets.
+
+The curated catalog, styles and previews are bundled, work offline, and
+receive updates with Spotifast releases. Browsing, installing and applying
+make no HTTP requests. **View source** opens the pinned upstream GitHub theme
+in your browser. Attribution and the MIT license are included in
+[the package source](https://github.com/htristan16/Spotifast-PersonalVersion/tree/feature/native-theme-marketplace/assets/themes/sleek).
+This is a native theme marketplace, not the Spotify Marketplace application.
+Additional themes need their own native appearance ports; CSS, JavaScript
+extensions and `theme.js` are not executed.
+
 ### Import Spicetify themes
 
-In **Settings > Appearance > Spicetify themes**, click **Import color.ini**
+In **Settings > Appearance > Theme marketplace**, click **Import color.ini**
 and select a downloaded theme's `color.ini`. Every named color scheme is
 added to the **Theme** picker as **Spicetify ThemeName - SchemeName**.
 Select one to apply it throughout the main window and mini player. Your
