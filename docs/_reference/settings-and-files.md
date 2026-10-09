@@ -464,7 +464,7 @@ The curated catalog, styles and previews are bundled, work offline, and
 receive updates with Spotifast releases. Browsing, installing and applying
 make no HTTP requests. **View source** opens the pinned upstream GitHub theme
 in your browser. Attribution and the MIT license are included in
-[the package source](https://github.com/htristan16/Spotifast-PersonalVersion/tree/feature/native-theme-marketplace/assets/themes/sleek).
+[the package source](https://github.com/htristan16/Spotifast-PersonalVersion/tree/main/assets/themes/sleek).
 This is a native theme marketplace, not the Spotify Marketplace application.
 Additional themes need their own native appearance ports; CSS, JavaScript
 extensions and `theme.js` are not executed.

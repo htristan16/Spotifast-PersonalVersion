@@ -127,7 +127,7 @@ See [proxy options and limits](/how-it-connects/#proxy).
 Build the single binary with Rust 1.98 or newer:
 
 ```bash
-cargo install --git https://github.com/crmne/spotifast --locked
+cargo install --git https://github.com/htristan16/Spotifast-PersonalVersion --branch main --locked
 ```
 
 On Linux, install development packages for audio and windowing. On Arch:
