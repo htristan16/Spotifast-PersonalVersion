@@ -563,6 +563,10 @@ struct PlaylistCacheWrite {
 
 pub enum Command {
     OpenThemesFolder,
+    ImportSpicetifyTheme {
+        selected:
+            std::pin::Pin<Box<dyn std::future::Future<Output = Option<rfd::FileHandle>> + Send>>,
+    },
     ProxyRestored {
         lease: CredentialLease,
         result: Result<crate::credentials::Loaded, crate::credentials::Error>,
@@ -747,6 +751,7 @@ pub struct LyricsRequest {
 }
 
 pub enum Event {
+    SpicetifyThemesImported(Result<Vec<crate::theme::CustomTheme>, String>),
     ProxyRestored {
         config: ProxyConfig,
         password: Option<crate::credentials::ProxyPassword>,
@@ -1005,7 +1010,8 @@ impl Backend {
         if self.offline
             && !matches!(
                 command,
-                Command::Accent { .. }
+                Command::ImportSpicetifyTheme { .. }
+                    | Command::Accent { .. }
                     | Command::Shutdown
                     | Command::CheckForUpdates { .. }
                     | Command::InspectUpdate
@@ -1031,6 +1037,17 @@ impl Backend {
         self.send(Command::ChoosePlaylistCover {
             id,
             request,
+            selected: Box::pin(selected),
+        });
+    }
+
+    /// Create the picker on the main thread for AppKit, then await it on the runtime.
+    pub fn import_spicetify_theme(&self) {
+        let selected = rfd::AsyncFileDialog::new()
+            .set_title("Import Spicetify color.ini")
+            .add_filter("Spicetify color schemes", &["ini"])
+            .pick_file();
+        self.send(Command::ImportSpicetifyTheme {
             selected: Box::pin(selected),
         });
     }
@@ -1575,7 +1592,8 @@ impl Worker {
             if self.restoring_proxy
                 && !matches!(
                     &command,
-                    Command::ProxyRestored { .. }
+                    Command::ImportSpicetifyTheme { .. }
+                        | Command::ProxyRestored { .. }
                         | Command::ApplyProxy { .. }
                         | Command::SignIn { .. }
                         | Command::SignOut
@@ -1587,6 +1605,23 @@ impl Worker {
                 continue;
             }
             match command {
+                Command::ImportSpicetifyTheme { selected } => {
+                    let directory = self.dirs.config.join("themes");
+                    let events = self.events.clone();
+                    let waker = self.waker.clone();
+                    tokio::spawn(async move {
+                        let result = match selected.await {
+                            None => Ok(Vec::new()),
+                            Some(file) => tokio::task::spawn_blocking(move || {
+                                crate::theme::spicetify::import(file.path(), &directory)
+                            })
+                            .await
+                            .unwrap_or_else(|_| Err("The theme import worker stopped".into())),
+                        };
+                        let _ = events.send(Event::SpicetifyThemesImported(result));
+                        waker.wake();
+                    });
+                }
                 Command::OpenThemesFolder => {
                     let directory = self.dirs.config.join("themes");
                     let events = self.events.clone();

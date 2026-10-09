@@ -1582,6 +1582,55 @@ mod tests {
     }
 
     #[test]
+    fn spicetify_import_is_accessible_and_disables_while_working() {
+        fn settings_access(
+            ctx: &egui::Context,
+            app: &mut App,
+            events: Vec<egui::Event>,
+        ) -> egui::accesskit::TreeUpdate {
+            let mut output = ctx.run_ui(
+                egui::RawInput {
+                    screen_rect: Some(egui::Rect::from_min_size(
+                        egui::Pos2::ZERO,
+                        egui::vec2(1280.0, 800.0),
+                    )),
+                    events,
+                    ..Default::default()
+                },
+                |ui| crate::ui::settings::show(app, ui),
+            );
+            output.textures_delta.clear();
+            output.platform_output.accesskit_update.unwrap()
+        }
+        let (ctx, mut app) = accessible_app("spicetify-settings");
+        settings_text(&ctx, &mut app, "Spicetify");
+        let tree = settings_access(&ctx, &mut app, vec![]);
+        let import = accessible_node(&tree, "Import color.ini", egui::accesskit::Role::Button);
+        app.actions.clear();
+        settings_access(
+            &ctx,
+            &mut app,
+            vec![accessible_action(
+                import,
+                egui::accesskit::Action::Click,
+                None,
+            )],
+        );
+        assert!(matches!(
+            app.actions.as_slice(),
+            [crate::model::Action::ImportSpicetifyTheme]
+        ));
+        app.spicetify_importing = true;
+        let tree = settings_access(&ctx, &mut app, vec![]);
+        assert!(
+            tree.nodes
+                .iter()
+                .any(|(_, node)| node.label() == Some("Import color.ini") && node.is_disabled())
+        );
+        app.backend.shutdown();
+    }
+
+    #[test]
     fn modern_mini_player_settings_replace_skins_and_remove_milkdrop() {
         let (ctx, mut app) = accessible_app("modern-mini-settings");
         let text = settings_text(&ctx, &mut app, "mini player");

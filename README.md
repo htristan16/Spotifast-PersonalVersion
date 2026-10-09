@@ -72,6 +72,13 @@ both using your computer's protected storage. See
 [Getting started](https://spotifast.rocks/getting-started/) for the full walkthrough
 and [How it connects](https://spotifast.rocks/how-it-connects/) for the details.
 
+## Spicetify color themes
+
+Import a downloaded theme's `color.ini` from **Settings > Appearance >
+Spicetify themes**, then choose any imported scheme under **Theme**.
+The colors apply to the main window and mini player. CSS and JavaScript
+are not imported. [Read the import guide](docs/_reference/settings-and-files.md#import-spicetify-themes).
+
 ## The mini player
 
 A sleek compact player that follows the main window's theme, with album art,

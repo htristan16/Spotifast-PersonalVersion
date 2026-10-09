@@ -1107,6 +1107,7 @@ pub enum Action {
     /// Draw the interface in this language from the next frame on.
     SetLanguage(crate::settings::LanguageChoice),
     OpenThemesFolder,
+    ImportSpicetifyTheme,
     SetCustomTheme(String),
     ReloadThemes,
     SetLibrarySort {

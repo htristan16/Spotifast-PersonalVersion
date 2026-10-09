@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>Spicetify import visual review</title>
+<style>body{font:16px system-ui;margin:32px;background:#181a1b;color:#eee}select,button{font:inherit;margin:8px;padding:8px}img{max-width:100%;height:auto}a{color:#8ee7b2}figure{margin:20px 0}</style>
+<h1>Spicetify theme import</h1><p>Actual Linux/X11 demo captures at 1280×800. The Settings search is filled through real keyboard input. The importer adds one row to Appearance; existing theme controls and layouts are preserved.</p>
+<label>Theme <select id="theme"><option>dark</option><option>light</option></select></label>
+<label>View <select id="view"><option value="settings">Settings, 1280×800</option><option value="sleek">Imported Sleek scheme, 1280×800</option><option value="mini">Imported Sleek mini player, 420×260</option></select></label>
+<button id="before">Before</button><button id="after">After</button>
+<figure><img id="shot" alt="Theme import screenshot"><figcaption id="caption"></figcaption></figure>
+<p>Example: <a href="https://github.com/spicetify/spicetify-themes/tree/master/Sleek">Sleek</a>, Wealthy scheme. All 19 schemes were imported by the actual importer. Only color.ini is read; source files are preserved. Imported palettes can be selected and cached using the existing theme system. CSS, JavaScript, fonts, and layouts are not imported.</p>
+<script>let stage='after';function render(){const theme=document.getElementById('theme').value,view=document.getElementById('view').value;const path=view==='settings'?stage+'-settings-'+theme+'.png':view==='sleek'?'after-sleek.png':'sleek-mini.png';document.getElementById('shot').src=path;document.getElementById('caption').textContent=view==='settings'?stage+' · '+theme+' · 1280×800':'Imported Sleek · Wealthy';document.getElementById('before').disabled=view!=='settings';document.getElementById('theme').disabled=view!=='settings'}document.getElementById('before').onclick=()=>{stage='before';render()};document.getElementById('after').onclick=()=>{stage='after';render()};document.querySelectorAll('select').forEach(s=>s.onchange=render);render();</script></html>

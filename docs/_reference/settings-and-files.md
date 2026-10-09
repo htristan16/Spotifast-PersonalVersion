@@ -432,6 +432,46 @@ dark styling of standard controls. Album-art tinting remains an independent
 setting; turn it off for fixed colors throughout. Palettes apply to the main
 window and the mini player. This first format controls colors only.
 
+### Import Spicetify themes
+
+In **Settings > Appearance > Spicetify themes**, click **Import color.ini**
+and select a downloaded theme's `color.ini`. Every named color scheme is
+added to the **Theme** picker as **Spicetify ThemeName - SchemeName**.
+Select one to apply it throughout the main window and mini player. Your
+current theme stays selected until you choose an imported scheme.
+
+On Windows, Spicetify themes are usually in `%APPDATA%\spicetify\Themes`.
+On Linux and macOS, look in `~/.config/spicetify/Themes`. You can also
+select `color.ini` from an unpacked theme downloaded from GitHub. Spicetify
+and Spotify do not need to be installed for this import.
+
+The import copies colors into ordinary JSON files in Spotifast's themes
+folder. It never changes the original theme, reads its CSS or JavaScript,
+or overwrites an existing palette. Importing an unchanged scheme reuses
+its file; a changed scheme gets a numbered filename. Imported themes stay
+available after restarting, even if the source folder is removed. Import
+again to pick up changes to the source.
+
+Supported colors are six-digit hex (with or without `#`), three-digit hex,
+and decimal RGB triplets such as `255, 128, 0`. UTF-8, BOM, CRLF, comments,
+and multiple schemes are supported. Resolve `${VARIABLE}` and Linux
+`${xrdb:...}` values to literal colors before importing; an unresolved or
+invalid color rejects the whole file. A file is limited to 64 KiB and 64
+schemes; the existing theme folder limits still apply.
+
+Spicetify color roles are mapped to native controls: `main` supplies the
+window, `player` the panels and mini player, `card` the surfaces, `text`
+and `subtext` the labels, and `button`/`button-active` the accents.
+`sidebar` fills missing panel/surface colors. Selection, disabled, shadow,
+and notification colors are also mapped where corresponding native roles
+exist. Missing roles use a light or dark native palette, inferred from
+the background and text. Button text uses a contrasting color.
+
+This imports color schemes, rather than Spotify's CSS layouts, custom
+fonts, image assets, extensions, or `theme.js`. It does not install a
+browser engine or run theme code. **Accent from album art** still works;
+turn it off if you prefer the imported palette's fixed colors everywhere.
+
 ### Follow an Omarchy theme
 
 Since 0.8.0, native Linux packages include the Omarchy integration.

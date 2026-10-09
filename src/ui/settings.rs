@@ -822,6 +822,10 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                 "Show the song moving behind the player bar's controls while it plays here.",
             ),
         ),
+        RowText::new(
+            gettext(locale, "Spicetify themes"),
+            gettext(locale, "Import color.ini schemes for the whole app. CSS and JavaScript are not imported."),
+        ),
     ];
     if section_matches(&needle, &appearance, &appearance_rows) {
         any_visible = true;
@@ -922,6 +926,31 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
                             buttons(ui);
                         }
                     });
+                },
+            );
+            filtered_row(
+                ui,
+                &palette,
+                &needle,
+                &appearance,
+                appearance_rows.last().unwrap(),
+                |ui| {
+                    ui.add_enabled_ui(!app.spicetify_importing, |ui| {
+                        if theme::soft_button(
+                            ui,
+                            &palette,
+                            Some(Icon::Plus),
+                            &gettext(locale, "Import color.ini"),
+                            false,
+                        )
+                        .clicked()
+                        {
+                            app.actions.push(Action::ImportSpicetifyTheme);
+                        }
+                    });
+                    if app.spicetify_importing {
+                        theme::spinner(ui, 16.0, palette.accent);
+                    }
                 },
             );
             filtered_row(

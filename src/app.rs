@@ -287,6 +287,7 @@ pub struct App {
     /// applies, on a context that never draws, turn it off.
     pub(crate) reveal_theme_changes: bool,
     pub custom_themes: theme::Catalog,
+    pub spicetify_importing: bool,
 
     pub auth: AuthStatus,
     pub user: Option<User>,
@@ -730,6 +731,7 @@ impl App {
         let palette = settings.cached_palette().unwrap_or_else(Palette::dark);
         let mut app = Self {
             custom_themes: theme::Catalog::default(),
+            spicetify_importing: false,
             dirs,
             settings,
             applied_proxy,
@@ -1804,6 +1806,7 @@ impl App {
     fn handle_backend_events(&mut self, events: Vec<Event>) {
         for event in events {
             if self.offline
+                && !matches!(&event, Event::SpicetifyThemesImported(_))
                 && (self.update_source.is_github()
                     || !matches!(
                         &event,
@@ -1817,6 +1820,7 @@ impl App {
                 continue;
             }
             match event {
+                Event::SpicetifyThemesImported(result) => self.spicetify_imported(result),
                 Event::PlaylistCoverChecked {
                     id,
                     request,
@@ -3005,6 +3009,24 @@ impl App {
         let mut saved = self.settings.clone();
         self.applied_proxy_preferences.apply_to(&mut saved);
         saved.save(&self.dirs.settings_file());
+    }
+
+    fn spicetify_imported(&mut self, result: Result<Vec<theme::CustomTheme>, String>) {
+        self.spicetify_importing = false;
+        match result {
+            Ok(themes) if !themes.is_empty() => {
+                self.toast(gettext(
+                    self.locale,
+                    "Spicetify schemes imported. Choose one under Theme.",
+                ));
+                self.actions.push(Action::ReloadThemes);
+            }
+            Ok(_) => {}
+            Err(error) => self.toast_error(
+                gettext(self.locale, "Couldn't import the theme: {error}")
+                    .replace("{error}", &error),
+            ),
+        }
     }
 
     /// Called at launch or by the local reload command. Construction and window
@@ -8972,6 +8994,12 @@ impl App {
                 let waker = Waker::default();
                 waker.attach(ctx);
                 self.load_custom_themes(&waker);
+            }
+            Action::ImportSpicetifyTheme => {
+                if !self.spicetify_importing {
+                    self.spicetify_importing = true;
+                    self.backend.import_spicetify_theme();
+                }
             }
             Action::OpenThemesFolder => {
                 self.backend.send(Command::OpenThemesFolder);
@@ -22780,5 +22808,31 @@ mod tests {
             app.library.liked.revision, before,
             "the shorter list must invalidate the table's cached row order"
         );
+    }
+    #[test]
+    fn spicetify_import_completion_refreshes_the_picker_without_changing_selection() {
+        let mut app = test_app("spicetify-completion");
+        app.settings.custom_theme = Some("Existing.json".into());
+        app.spicetify_importing = true;
+        let themes = vec![theme::CustomTheme {
+            filename: "Spicetify Sleek - Dark.json".into(),
+            palette: theme::Palette::dark(),
+        }];
+        app.handle_backend_events(vec![Event::SpicetifyThemesImported(Ok(themes))]);
+        assert!(!app.spicetify_importing);
+        assert!(
+            app.actions
+                .iter()
+                .any(|action| matches!(action, Action::ReloadThemes))
+        );
+        assert_eq!(app.settings.custom_theme.as_deref(), Some("Existing.json"));
+        app.actions.clear();
+        for result in [Ok(Vec::new()), Err("invalid color".into())] {
+            app.spicetify_importing = true;
+            app.handle_backend_events(vec![Event::SpicetifyThemesImported(result)]);
+            assert!(!app.spicetify_importing);
+            assert!(app.actions.is_empty());
+            assert_eq!(app.settings.custom_theme.as_deref(), Some("Existing.json"));
+        }
     }
 }
